@@ -1,9 +1,11 @@
 const express = require('express')
 const mongoose = require('mongoose')
+const jwt = require("jsonwebtoken");
 
 
 const productsRouter = require('./routes/product_routes');
 const authRouter = require('./routes/auth_route')
+const config = require('./config')
 
 
 
@@ -11,11 +13,8 @@ const app = express()
 const port = 3000
 
 
-const db = 'mongodb://127.0.0.1:27017/crud2'
-
-
 mongoose
-    .connect(db)
+    .connect(config.DB)
     .then(() => {
         console.log("connection successful");
     })
@@ -28,6 +27,18 @@ app.use('/', authRouter)
 
 app.use('/products', productsRouter)
 
+app.use('/verifyToken/:token', async (req, res) => {
+    const token = req.params.token;
+
+    await jwt.verify(token, config.SECRET_KEY, (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ success: false, message: "Invalid token" })
+        }
+        req.user = decoded;
+        res.json({ success: true, message: "Valid token" })
+    })
+})
 
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+
+app.listen(port, () => console.log(`JWT-CRUD app listening on port ${port}!`))
